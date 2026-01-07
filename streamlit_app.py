@@ -15,7 +15,7 @@ ACCENT_BLOOD = "#7A0E0E"
 WHITE = "#FFFFFF"
 
 
-st.set_page_config(page_title="BBB Permeability Studio", page_icon="🧠", layout="wide")
+st.set_page_config(page_title="BBB Permeability Tool", page_icon="🧠", layout="wide")
 
 # Inject a compact red theme CSS
 THEME_CSS = f"""
@@ -70,7 +70,7 @@ def _mock_results(smiles: List[str], threshold: float) -> pd.DataFrame:
     return base
 
 
-st.title("Blood–Brain Barrier (BBB) Permeability Studio")
+st.title("Blood Brain Barrier (BBB) Permeability Tool")
 st.caption("Upload SMILES or paste one per line — the model returns probability of BBB permeability.")
 
 with st.sidebar:
