@@ -1,12 +1,9 @@
 import io
 import zipfile
-from pathlib import Path
 from typing import List
 
 import streamlit as st
 import pandas as pd
-
-from bbb_model_predictor import BBBPredictor
 
 
 # ---- Red Theme Palette ----
@@ -61,17 +58,16 @@ h1, h2, h3, h4 {{ color: {RICH_CARMINE}; }}
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 
-def _load_predictor(artifacts_dir: str = "artifacts") -> BBBPredictor:
-    return BBBPredictor(artifacts_dir=artifacts_dir)
-
-
-def _predict_from_smiles(pred: BBBPredictor, smiles: List[str], threshold: float = 0.5) -> pd.DataFrame:
-    try:
-        df = pred.predict_proba(smiles)
-        df["bbb_label"] = (df["p_bbb_plus"] >= threshold).astype(int)
-        return df
-    except Exception as e:
-        raise
+def _mock_results(smiles: List[str], threshold: float) -> pd.DataFrame:
+    # Lightweight mock output so UI renders without model deps
+    base = pd.DataFrame({"smiles": smiles})
+    base["p_bbb_plus"] = 0.5
+    base["p_efflux_mech"] = 0.2
+    base["p_influx_mech"] = 0.3
+    base["p_pampa_mech"] = 0.4
+    base["p_cns_mech"] = 0.6
+    base["bbb_label"] = (base["p_bbb_plus"] >= threshold).astype(int)
+    return base
 
 
 st.title("Blood–Brain Barrier (BBB) Permeability Studio")
@@ -79,10 +75,11 @@ st.caption("Upload SMILES or paste one per line — the model returns probabilit
 
 with st.sidebar:
     st.header("Controls")
-    artifacts_path = st.text_input("Artifacts folder", value="artifacts", help="Path to trained model artifacts")
+    st.text_input("Artifacts folder", value="artifacts", help="Disabled in UI-only mode")
     threshold = st.slider("Classification threshold", min_value=0.0, max_value=1.0, value=0.5, step=0.01)
     st.markdown("---")
-    st.markdown("About: This UI runs the repository's `BBBPredictor` to score SMILES.")
+    st.markdown("About: UI-only mode (model loading disabled).")
+
 
 tab = st.tabs(["Home", "Predict", "Documentation"])
 
@@ -128,34 +125,27 @@ with tab[1]:
         if not smiles_list:
             st.error("Provide at least one SMILES string before predicting.")
         else:
-            try:
-                with st.spinner("Loading model artifacts…"):
-                    predictor = _load_predictor(artifacts_dir=artifacts_path)
-                with st.spinner("Generating predictions…"):
-                    results = _predict_from_smiles(predictor, smiles_list, threshold=threshold)
+            results = _mock_results(smiles_list, threshold=threshold)
 
-                if show_raw:
-                    st.subheader("Results (probabilities)")
-                    st.dataframe(results, use_container_width=True)
+            if show_raw:
+                st.subheader("Results (mock probabilities)")
+                st.dataframe(results, use_container_width=True)
 
-                # Offer CSV download
-                csv_bytes = results.to_csv(index=False).encode("utf-8")
-                st.download_button("Download results CSV", data=csv_bytes, file_name="bbb_predictions.csv")
+            csv_bytes = results.to_csv(index=False).encode("utf-8")
+            st.download_button("Download results CSV", data=csv_bytes, file_name="bbb_predictions.csv")
 
-                # Offer zipped single-file per molecule (PSEUDO: create per-smiles txt)
-                mem = io.BytesIO()
-                with zipfile.ZipFile(mem, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-                    for i, row in results.iterrows():
-                        name = f"mol_{i+1}.txt"
-                        txt = f"smiles: {row['smiles']}\n p_bbb_plus: {row['p_bbb_plus']:.4f}\nlabel: {int(row.get('bbb_label',0))}\n"
-                        zf.writestr(name, txt)
-                mem.seek(0)
-                st.download_button("Download per-molecule summary (ZIP)", data=mem.getvalue(), file_name="bbb_per_mol.zip")
-
-            except Exception as e:
-                st.error(f"Prediction failed: {e}")
+            mem = io.BytesIO()
+            with zipfile.ZipFile(mem, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+                for i, row in results.iterrows():
+                    name = f"mol_{i+1}.txt"
+                    txt = (
+                        f"smiles: {row['smiles']}\n"
+                        f"p_bbb_plus: {row['p_bbb_plus']:.4f}\n"
+                        f"label: {int(row.get('bbb_label', 0))}\n"
+                    )
+                    zf.writestr(name, txt)
+            mem.seek(0)
+            st.download_button("Download per-molecule summary (ZIP)", data=mem.getvalue(), file_name="bbb_per_mol.zip")
 
     if not run_btn and smiles_list:
         st.info(f"Ready to predict {len(smiles_list)} molecule(s). Click 'Predict BBB' to run.")
-
-
