@@ -2,8 +2,8 @@ import io
 import zipfile
 from typing import List
 
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
 
 # ---- Red Theme Palette ----

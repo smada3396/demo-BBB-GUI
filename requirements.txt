@@ -1,2 +1,2 @@
 streamlit>=1.39.0
-rdkit-pypi
+pandas>=2.0.0
