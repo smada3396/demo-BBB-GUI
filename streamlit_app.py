@@ -75,7 +75,7 @@ st.caption("Upload SMILES or paste one per line — the model returns probabilit
 
 with st.sidebar:
     st.header("Controls")
-    st.text_input("Artifacts folder", value="artifacts", help="Disabled in UI-only mode")
+    st.text_input("Workspace Folder", value="artifacts", help="Disabled in UI-only mode")
     threshold = st.slider("Classification threshold", min_value=0.0, max_value=1.0, value=0.5, step=0.01)
     st.markdown("---")
     st.markdown("About: UI-only mode (model loading disabled).")
